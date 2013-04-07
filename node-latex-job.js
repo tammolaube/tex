@@ -29,97 +29,119 @@ var path = require('path'),
             command : 'mkindex'
         }
     },
-    // Job default options
     DEFAULTS = {
         program : PROGRAMS['pdflatex'],
-        workingDir : '.',
-        arguments : {
+        args : {
             interaction : 'nonstopmode'
         },
         status : {
-            code : 0,
-            done : false,                
-            message : 'Initial.',
-            success : ''
-        },
-        getFileName : getFileName,
-        getInputFileName : getInputFileName,
-        getOutputFileName : getOutputFileName,
-        getOutputFilePath : getOutputFilePath,
-        getLogFilePath : getLogFilePath
+            code : undefined,
+            success : undefined
+        }
     };
-
-function getInputFileName () {
-    return path.basename(this.inputFilePath);
-}
-
-function getOutputFileName () {
-    return (this.program.extension) ? addExtension(this.arguments.jobname, this.program.extension) : '';
-}
-
-function getOutputFilePath () {
-    return (this.program.extension) ? joinFilePath.call(this, this.program.extension) : '';
-}
-
-function getLogFilePath () {
-    return joinFilePath.call(this, EXTENSIONS.LOG); 
-}
-
-function joinFilePath(extension) {
-    return path.join(this.outputDir, addExtension(this.arguments.jobname, extension)); 
-}
-
-function getFileName(extension) {
-    return addExtension(this.arguments.jobname, extension);
-}
 
 function addExtension(name, extension) {
     return (extension) ? (name + '.' + extension) : name;
 }
 
-// Safely merges the new options or the defaults into the job
-function setJob (job, options) {
-    for (var attr in DEFAULTS) {
-        job[attr] = options[attr] || DEFAULTS[attr];
-        delete options[attr];
+function merge(obj1, obj2) {
+    var ret = {};
+    for (var attr in obj1) {
+        ret[attr] = obj1[attr];
+    }  
+    for (var attr in obj2) {
+        ret[attr] = obj2[attr];
     }
-    for (var attr in options) {
-        job[attr] = options[attr];
-    }
-    return job;
-}
-
-function getJobName(inputFilePath) {
-    return path.basename(inputFilePath, addExtension('', EXTENSIONS.TEX));
-}
-
-// Merges the parameters
-function mergeOptions (inputFilePath, arg1, arg2) {
-    var options = arg2 || {};
-
-    if (typeof arg1 === 'string') {
-        options.program = PROGRAMS[arg1];
-    } else if (arg1) {
-        options = arg1;
-    }
-    
-    options.inputFilePath = inputFilePath;
-
-    // 'jobname' has to be set, it is used to get output file names
-    if (!options.arguments || !options.arguments.jobname) {
-        options.arguments = options.arguments || {};
-        options.arguments.jobname = getJobName(inputFilePath);
-    }
-
-    return options;
+    return ret;
 }
 
 // Latex job constructor
 function Job(inputFilePath, arg1, arg2) {
+    var holder;    
+
     if (!inputFilePath) {
         throw new Error('Illegal Argument: An inputFilePath must be specified!');
     }
-    setJob(this, mergeOptions(inputFilePath, arg1, arg2));
+
+    if (typeof arg1 === 'string') {
+        holder = merge(DEFAULTS, arg2);
+        holder.program = PROGRAMS[arg1];
+    } else {
+        holder = merge(DEFAULTS, arg1);
+    }
+
+    holder.inputFilePath = inputFilePath;
+
+    this.getJobName = function () {
+        return (holder.args.jobname) ? holder.args.jobname : path.basename(holder.inputFilePath, addExtension('', EXTENSIONS.TEX));
+    }
+
+    this.getFileName = function (extension) {
+        return addExtension(this.getJobName(), extension);
+    }
+
+    this.getInputFileName = function () {
+        return path.basename(holder.inputFilePath);
+    }
+
+    this.getInputFilePath = function () {
+        return holder.inputFilePath;
+    }
+
+    this.getOutputExtension = function () {
+        return (holder.program.extension) ? holder.program.extension : '';
+    }
+
+    this.getOutputFileName = function () {
+        return (holder.program.extension) ? this.getFileName(holder.program.extension) : '';
+    }
+
+    this.getOutputDirectory = function () {
+        return (holder.args['output-directory']) ? holder.args['output-directory'] : '.';
+    }
+
+    this.getOutputFilePath = function () {
+        return (holder.program.extension) ? joinFilePath.call(this, holder.program.extension) : '';
+    }
+
+    this.getLogFileName = function () {
+        return this.getFileName(EXTENSIONS.LOG); 
+    }
+
+    this.getLogFilePath = function () {
+        return joinFilePath.call(this, EXTENSIONS.LOG); 
+    }
+
+    this.getCommand = function () {
+        return holder.program.command;
+    }
+
+    this.getStatus = function () {
+        return holder.status;
+    }
+
+    // Converts the args object into an array compatible for *tex programs
+    this.getArgs = function () {
+        var ret = [];    
+        for (var attr in holder.args) {
+            var arg = '-' + attr,
+                val = holder.args[attr];
+            if (val) {
+                arg += '=' + val;
+            }        
+            ret.push(arg);
+        }
+        return ret;
+    }
+
+    this.getOptions = function () {
+        return holder.options;
+    }
+
+    function joinFilePath(extension) {
+        return path.join(this.getOutputDirectory(), addExtension(this.getJobName(), extension)); 
+    }
+
 }
 
 module.exports.PROGRAMS = PROGRAMS;
