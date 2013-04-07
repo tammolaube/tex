@@ -32,8 +32,10 @@ var path = require('path'),
     // Job default options
     DEFAULTS = {
         program : PROGRAMS['pdflatex'],
-        workingDir : '.',        
-        outputDir : 'tmp/node-latex/out',
+        workingDir : '.',
+        arguments : {
+            interaction : 'nonstopmode'
+        },
         status : {
             code : 0,
             done : false,                
@@ -52,7 +54,7 @@ function getInputFileName () {
 }
 
 function getOutputFileName () {
-    return (this.program.extension) ? addExtension(this.jobName, this.program.extension) : '';
+    return (this.program.extension) ? addExtension(this.arguments.jobname, this.program.extension) : '';
 }
 
 function getOutputFilePath () {
@@ -64,11 +66,11 @@ function getLogFilePath () {
 }
 
 function joinFilePath(extension) {
-    return path.join(this.outputDir, addExtension(this.jobName, extension)); 
+    return path.join(this.outputDir, addExtension(this.arguments.jobname, extension)); 
 }
 
 function getFileName(extension) {
-    return addExtension(this.jobName, extension);
+    return addExtension(this.arguments.jobname, extension);
 }
 
 function addExtension(name, extension) {
@@ -77,7 +79,6 @@ function addExtension(name, extension) {
 
 // Safely merges the new options or the defaults into the job
 function setJob (job, options) {
-    options = options || {};
     for (var attr in DEFAULTS) {
         job[attr] = options[attr] || DEFAULTS[attr];
         delete options[attr];
@@ -88,14 +89,26 @@ function setJob (job, options) {
     return job;
 }
 
-// Merges the possible parameters 2 and 3
-function mergeOptions (arg1, arg2) {
+function getJobName(inputFilePath) {
+    return path.basename(inputFilePath, addExtension('', EXTENSIONS.TEX));
+}
+
+// Merges the parameters
+function mergeOptions (inputFilePath, arg1, arg2) {
     var options = arg2 || {};
-    
+
     if (typeof arg1 === 'string') {
         options.program = PROGRAMS[arg1];
-    } else {
+    } else if (arg1) {
         options = arg1;
+    }
+    
+    options.inputFilePath = inputFilePath;
+
+    // 'jobname' has to be set, it is used to get output file names
+    if (!options.arguments || !options.arguments.jobname) {
+        options.arguments = options.arguments || {};
+        options.arguments.jobname = getJobName(inputFilePath);
     }
 
     return options;
@@ -103,16 +116,10 @@ function mergeOptions (arg1, arg2) {
 
 // Latex job constructor
 function Job(inputFilePath, arg1, arg2) {
-    var options = mergeOptions(arg1, arg2);    
-
     if (!inputFilePath) {
         throw new Error('Illegal Argument: An inputFilePath must be specified!');
-    }    
-
-    this.inputFilePath = inputFilePath || '';
-    this.jobName = path.basename(this.inputFilePath, addExtension('', EXTENSIONS.TEX));
-
-    setJob(this, options);
+    }
+    setJob(this, mergeOptions(inputFilePath, arg1, arg2));
 }
 
 module.exports.PROGRAMS = PROGRAMS;
