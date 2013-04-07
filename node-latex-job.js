@@ -6,29 +6,34 @@ var path = require('path'),
         DVI : 'dvi'
     },
     PROGRAMS = {
-        PDFLATEX : {
+        pdflatex : {
             command : 'pdflatex',
             extension : EXTENSIONS.PDF
         },
-        TEX : {
+        pdftex : {
+            command : 'pdftex',
+            extension : EXTENSIONS.PDF
+        },
+        tex : {
             command : 'tex',
             extension : EXTENSIONS.DVI
         },
-        LATEX : {
+        latex : {
             command : 'latex',
             extension : EXTENSIONS.DVI
         },
-        BIBTEX : {
+        bibtex : {
             command : 'bibtex'
         },
-        MKINDEX : {
+        mkindex : {
             command : 'mkindex'
         }
     },
     // Job default options
     DEFAULTS = {
-        program : PROGRAMS.PDFLATEX,
-        outputDir : '/tmp/node-latex/out',
+        program : PROGRAMS['pdflatex'],
+        workingDir : '.',        
+        outputDir : 'tmp/node-latex/out',
         status : {
             code : 0,
             done : false,                
@@ -71,7 +76,7 @@ function addExtension(name, extension) {
 }
 
 // Safely merges the new options or the defaults into the job
-function setOptions (job, options) {
+function setJob (job, options) {
     options = options || {};
     for (var attr in DEFAULTS) {
         job[attr] = options[attr] || DEFAULTS[attr];
@@ -83,20 +88,34 @@ function setOptions (job, options) {
     return job;
 }
 
+// Merges the possible parameters 2 and 3
+function mergeOptions (arg1, arg2) {
+    var options = arg2 || {};
+    
+    if (typeof arg1 === 'string') {
+        options.program = PROGRAMS[arg1];
+    } else {
+        options = arg1;
+    }
+
+    return options;
+}
+
 // Latex job constructor
-function Job(inputFilePath, options) {
+function Job(inputFilePath, arg1, arg2) {
+    var options = mergeOptions(arg1, arg2);    
+
     if (!inputFilePath) {
         throw new Error('Illegal Argument: An inputFilePath must be specified!');
-    }
+    }    
 
     this.inputFilePath = inputFilePath || '';
     this.jobName = path.basename(this.inputFilePath, addExtension('', EXTENSIONS.TEX));
 
-    setOptions(this, options);
+    setJob(this, options);
 }
 
-
 module.exports.PROGRAMS = PROGRAMS;
-module.exports.newJob = function job (inputFilePath, options) {
-    return new Job(inputFilePath, options);
+module.exports.newJob = function job (inputFilePath, arg1, arg2) {
+    return new Job(inputFilePath, arg1, arg2);
 };
