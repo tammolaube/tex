@@ -1,4 +1,5 @@
-var path = require('path'),    
+var _ = require('underscore'), 
+    path = require('path'),    
     EXTENSIONS = {
         TEX : 'tex',
         LOG : 'log',
@@ -34,6 +35,10 @@ var path = require('path'),
         args : {
             interaction : 'nonstopmode'
         },
+        options : { 
+            cwd: undefined,
+            env: process.env
+        },
         status : {
             code : undefined,
             success : undefined
@@ -44,31 +49,24 @@ function addExtension(name, extension) {
     return (extension) ? (name + '.' + extension) : name;
 }
 
-function merge(obj1, obj2) {
-    var ret = {};
-    for (var attr in obj1) {
-        ret[attr] = obj1[attr];
-    }  
-    for (var attr in obj2) {
-        ret[attr] = obj2[attr];
-    }
-    return ret;
-}
-
 // Latex job constructor
 function Job(inputFilePath, arg1, arg2) {
-    var holder;    
+    var holder = {};    
 
     if (!inputFilePath) {
         throw new Error('Illegal Argument: An inputFilePath must be specified!');
     }
 
+    _.extend(holder, DEFAULTS, arg2);
+
     if (typeof arg1 === 'string') {
-        holder = merge(DEFAULTS, arg2);
         holder.program = PROGRAMS[arg1];
     } else {
-        holder = merge(DEFAULTS, arg1);
+        _.extend(holder, arg1) 
     }
+
+    _.extend(holder.args, DEFAULTS.args, holder.args);
+    _.extend(holder.options, DEFAULTS.options, holder.options);
 
     holder.inputFilePath = inputFilePath;
 
@@ -131,6 +129,7 @@ function Job(inputFilePath, arg1, arg2) {
             }        
             ret.push(arg);
         }
+        ret.push(holder.inputFilePath);
         return ret;
     }
 
