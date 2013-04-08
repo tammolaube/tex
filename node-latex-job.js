@@ -1,5 +1,6 @@
 var _ = require('underscore'), 
-    path = require('path'),    
+    path = require('path'),
+    spawn = require('child_process').spawn,  
     EXTENSIONS = {
         TEX : 'tex',
         LOG : 'log',
@@ -36,42 +37,49 @@ var _ = require('underscore'),
             interaction : 'nonstopmode'
         },
         options : { 
-            cwd: undefined,
-            env: process.env
+            cwd : undefined,
+            env : process.env
         },
         status : {
-            code : undefined,
-            success : undefined
         }
     };
 
-function addExtension(name, extension) {
-    return (extension) ? (name + '.' + extension) : name;
-}
-
-// Latex job constructor
+// Latex job
+// Constructor signature: Job(inputFilePath, [program], [options])
+//     inputFilePath: Path to the .tex file to compile.
+//     program: See PROGRAMS
+//     options: See DEFAULTS
+//         .program: See PROGRAMS. This will be overwritten with the program argument of the constructor, if a program is specified.
+//         .args: Use Job.getArgs() to get an array of tex args suitable for use with require('child_process').spawn(command, [args]).
+//         .options: Gets passed to require('child_process').spawn(command, [args], [options]).
 function Job(inputFilePath, arg1, arg2) {
-    var holder = {};    
+    var privates = {};
 
     if (!inputFilePath) {
         throw new Error('Illegal Argument: An inputFilePath must be specified!');
     }
 
-    _.extend(holder, DEFAULTS, arg2);
+    // Initialize with privates with arguments or defaults
+    {
+        _.extend(privates, DEFAULTS, arg2);
 
-    if (typeof arg1 === 'string') {
-        holder.program = PROGRAMS[arg1];
-    } else {
-        _.extend(holder, arg1) 
+        if (typeof arg1 === 'string') {
+            privates.program = PROGRAMS[arg1];
+        } else {
+            _.extend(privates, arg1) 
+        }
+
+        // Deep extension of privates with support of the defaults
+        {
+            _.extend(privates.args, DEFAULTS.args, privates.args);
+            _.extend(privates.options, DEFAULTS.options, privates.options);
+        }
+
+        privates.inputFilePath = inputFilePath;
     }
 
-    _.extend(holder.args, DEFAULTS.args, holder.args);
-    _.extend(holder.options, DEFAULTS.options, holder.options);
-
-    holder.inputFilePath = inputFilePath;
-
     this.getJobName = function () {
-        return (holder.args.jobname) ? holder.args.jobname : path.basename(holder.inputFilePath, addExtension('', EXTENSIONS.TEX));
+        return (privates.args.jobname) ? privates.args.jobname : path.basename(privates.inputFilePath, addExtension('', EXTENSIONS.TEX));
     }
 
     this.getFileName = function (extension) {
@@ -79,27 +87,27 @@ function Job(inputFilePath, arg1, arg2) {
     }
 
     this.getInputFileName = function () {
-        return path.basename(holder.inputFilePath);
+        return path.basename(privates.inputFilePath);
     }
 
     this.getInputFilePath = function () {
-        return holder.inputFilePath;
+        return privates.inputFilePath;
     }
 
     this.getOutputExtension = function () {
-        return (holder.program.extension) ? holder.program.extension : '';
+        return (privates.program.extension) ? privates.program.extension : '';
     }
 
     this.getOutputFileName = function () {
-        return (holder.program.extension) ? this.getFileName(holder.program.extension) : '';
+        return (privates.program.extension) ? this.getFileName(privates.program.extension) : '';
     }
 
     this.getOutputDirectory = function () {
-        return (holder.args['output-directory']) ? holder.args['output-directory'] : '.';
+        return (privates.args['output-directory']) ? privates.args['output-directory'] : '.';
     }
 
     this.getOutputFilePath = function () {
-        return (holder.program.extension) ? joinFilePath.call(this, holder.program.extension) : '';
+        return (privates.program.extension) ? joinFilePath.call(this, privates.program.extension) : '';
     }
 
     this.getLogFileName = function () {
@@ -111,39 +119,63 @@ function Job(inputFilePath, arg1, arg2) {
     }
 
     this.getCommand = function () {
-        return holder.program.command;
+        return privates.program.command;
     }
 
     this.getStatus = function () {
-        return holder.status;
+        return privates.status;
     }
 
-    // Converts the args object into an array compatible for *tex programs
+    // Converts the args object into an array compatible for *tex programs.
+    // Keys with the values { undefined, null, '' } are returned as '-key'.
+    // Keys with values are returned as '-key=value'.
     this.getArgs = function () {
         var ret = [];    
-        for (var attr in holder.args) {
+        for (var attr in privates.args) {
             var arg = '-' + attr,
-                val = holder.args[attr];
+                val = privates.args[attr];
             if (val) {
                 arg += '=' + val;
             }        
             ret.push(arg);
         }
-        ret.push(holder.inputFilePath);
+        ret.push(privates.inputFilePath);
         return ret;
     }
 
     this.getOptions = function () {
-        return holder.options;
+        return privates.options;
     }
 
     function joinFilePath(extension) {
         return path.join(this.getOutputDirectory(), addExtension(this.getJobName(), extension)); 
     }
 
+    function addExtension(name, extension) {
+        return (extension) ? (name + '.' + extension) : name;
+    }
+
+    this.print = function (callback) {
+        var job = this,
+            printJob = startJob(this);
+
+        printJob.on('close', function (code) {
+            console.log('Print job finished with code \'' + code + '\'');
+            privates.status.code = code;
+            callback(code == 0, job);
+        });
+
+    }
+
+    function startJob(job) {
+        return spawn(job.getCommand(), job.getArgs(), job.getOptions());
+    }
+
 }
 
-module.exports.PROGRAMS = PROGRAMS;
-module.exports.newJob = function job (inputFilePath, arg1, arg2) {
+function newJob (inputFilePath, arg1, arg2) {
     return new Job(inputFilePath, arg1, arg2);
 };
+
+module.exports.PROGRAMS = PROGRAMS;
+module.exports.newJob = newJob; 
