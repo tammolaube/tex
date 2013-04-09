@@ -1,13 +1,16 @@
-jobs = require('../node-latex-job');
+jobs = require('../node-latex-job'),
+       path = require('path'),
+       mu = require('mu2');
 
-job = jobs.newJob('/home/tammo/workspace/node-latex/test/tex/tests.tex', { args : {'output-directory' : 'tex/out'}});
+mu.root = 'templates';
+var helloJohn = mu.compileAndRender('test.tpl', {name: "Markus"});
+
+job = jobs.newJob("tex/test.tex", { args : {'output-directory' : 'out'}});
 
 job.print(function (success, job) {
     if (success) {
         console.log('Printed: \'' + job.getOutputFilePath() + '\'');
     } else {
-        console.log('Error printing: \'' + job.getInputFilePath() + '\'');
+        console.log('Error printing: \'' + job.getInput() + '\'');
     }
-
-    console.log(job);
 });
