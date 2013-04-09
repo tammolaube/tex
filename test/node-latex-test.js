@@ -7,7 +7,7 @@ var helloJohn = mu.compileAndRender('test.tpl', {name: "Markus"});
 
 job = jobs.newJob("tex/test.tex", { args : {'output-directory' : 'out'}});
 
-job.print(function (success, job) {
+job.print(function (job, success) {
     if (success) {
         console.log('Printed: \'' + job.getOutputFilePath() + '\'');
     } else {
