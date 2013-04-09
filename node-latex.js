@@ -180,7 +180,9 @@ function Job(input, arg1, arg2) {
         printJob.on('close', function (code) {
             console.log('Print job finished with code \'' + code + '\'');
             privates.status.code = code;
-            callback(code == 0, job);
+            if (typeof callback === 'function') {
+                callback(job, code == 0);
+            }
         });
     }
 
