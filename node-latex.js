@@ -94,16 +94,16 @@ function Job(input, arg1, arg2) {
         return (jobname && extension) ? addExtension(jobname, extension) : undefined;
     }
 
+    this.getInput = function () {
+        return privates.input;
+    }
+
     this.getInputFileName = function () {
         var inputFileName;
         if (typeof privates.input === 'string') {
             inputFileName = path.basename(privates.input);
         }
         return inputFileName;
-    }
-
-    this.getInput = function () {
-        return privates.input;
     }
 
     this.getOutputExtension = function () {
@@ -184,6 +184,8 @@ function Job(input, arg1, arg2) {
                 callback(job, code == 0);
             }
         });
+
+        return undefined;
     }
 
     function getOutputPath(fileName) {
