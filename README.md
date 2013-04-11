@@ -33,7 +33,7 @@ You can input objects of type [stream.Readable](http://nodejs.org/api/stream.htm
 
 >**Don't forget to specify a jobname if you typeset a stream because tex is run in interactive mode.**
 >
->**Newlines inside the stream are not yet supported.**
+>**Currently streams are interpreted as utf8 encoded.**
 
 Example usecase in connection with [mustache](https://github.com/raycmorgan/Mu).
 ```javascript
