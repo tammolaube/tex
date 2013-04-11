@@ -3,6 +3,7 @@ var _ = require('underscore')
   , spawn = require('child_process').spawn
   , readline = require('readline')
   , stream = require('stream')
+  , ClearStream = require('./clearstream').ClearStream
   , EXTENSIONS = {
         TEX : 'tex',
         LOG : 'log',
@@ -180,26 +181,6 @@ Job.prototype.print = function (callback) {
     var job = this,
         printJob = startJob(this);
 
-    printJob.stdout.pipe(process.stdout);
-
-    if (typeof this.privates.input !== 'string' && this.privates.input.pipe !== 'undefined') {
-        try {
-            var rl = readline.createInterface({
-                input: this.privates.input,
-                output: process.stdout
-            });
-
-            rl.on('line', function (line) {
-              printJob.stdin.write(line);
-            });
-
-        } catch (e) {
-            console.log('Error while printing input: \'' + e + '\'');
-            console.log('Trying to kill print job: \'' + job.getJobName() + '\'');
-            printJob.stdin.end();
-        }
-    }
-
     printJob.on('close', function (code) {
         console.log('Print job finished with code \'' + code + '\'');
         job.privates.status.code = code;
@@ -227,5 +208,15 @@ function addExtension(name, extension) {
 }
 
 function startJob(job) {
-    return spawn(job.getCommand(), job.getArgs(), job.getOptions());
+    var printJob = spawn(job.getCommand(), job.getArgs(), job.getOptions())
+      , cls = new ClearStream(/\r?\n|\r(?!\n)/gi);
+
+    //printJob.stdout.pipe(process.stdout);
+
+    if (typeof job.privates.input !== 'string') {    
+        job.privates.input.pipe(cls);
+        cls.pipe(printJob.stdin);
+    }
+
+    return printJob; 
 }
