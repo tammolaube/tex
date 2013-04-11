@@ -3,7 +3,7 @@ var _ = require('underscore')
   , spawn = require('child_process').spawn
   , readline = require('readline')
   , stream = require('stream')
-  , ClearStream = require('./clearstream').ClearStream
+  , ClearStream = require('./util/clearstream').ClearStream
   , EXTENSIONS = {
         TEX : 'tex',
         LOG : 'log',
@@ -213,7 +213,7 @@ function startJob(job) {
 
     //printJob.stdout.pipe(process.stdout);
 
-    if (typeof job.privates.input !== 'string') {    
+    if (typeof job.privates.input !== 'string') {
         job.privates.input.pipe(cls);
         cls.pipe(printJob.stdin);
     }
