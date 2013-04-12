@@ -147,7 +147,7 @@ Job.prototype.getLogFileName = function () {
 }
 
 Job.prototype.getLogFilePath = function () {
-    return getOutputPath,call(this, this.getLogFileName());
+    return getOutputPath.call(this, this.getLogFileName());
 }
 
 Job.prototype.getCommand = function () {
@@ -213,9 +213,7 @@ function addExtension(name, extension) {
 
 function startJob(job) {
     var printJob = spawn(job.getCommand(), job.getArgs(), job.getOptions())
-      , cls = new ClearStream(/\r?\n|\r(?!\n)/gi);
-
-    //printJob.stdout.pipe(process.stdout);
+      , cls = new ClearStream();
 
     if (typeof job.privates.input !== 'string') {
         job.privates.input.pipe(cls);
