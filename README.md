@@ -1,5 +1,5 @@
 # tex
-Connecting node.js and TeX
+Connecting node.js and TeX.
 
 ## Dependencies
 At first, you need a TeX system like [texlive](http://www.tug.org/texlive/).
