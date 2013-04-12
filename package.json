@@ -1,0 +1,21 @@
+{
+  "name": "tex",
+  "description": "Connecting node.js and TeX.",
+  "author": "Tammo Laube <tammolaube@gmail.com>",
+  "dependencies": {
+    "underscore": "1.x.x"
+  },
+  "engine": "node >= 0.10.4",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/tammolaube/tex.git"
+  },
+  "main": "tex.js",
+  "readmeFilename": "README.md",
+  "keywords": [
+    "util",
+    "tex",
+    "latex",
+    "pdftex"
+  ]
+}
