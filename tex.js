@@ -197,7 +197,7 @@ Job.prototype.print = function (callback) {
 }
 
 function getOutputPath(fileName) {
-    return (fileName) ? path.join(this.getOutputDirectory(), fileName) : undefined;
+    return (fileName && this.getOutputDirectory()) ? path.join(this.getOutputDirectory(), fileName) : undefined;
 }
 
 function addExtension(name, extension) {
