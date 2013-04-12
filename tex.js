@@ -37,7 +37,8 @@ var _ = require('underscore')
   , DEFAULTS = {
         program : PROGRAMS['pdflatex'],
         args : {
-            interaction : 'batchmode'
+            interaction : 'batchmode',
+            'output-directory' : '.'
         },
         options : { 
             cwd : undefined,
@@ -63,6 +64,7 @@ function newJob (input, arg1, arg2) {
 //         .args: Use Job.getArgs() to get an array of tex args suitable for use with require('child_process').spawn(command, [args]).
 //         .options: Gets passed to require('child_process').spawn(command, [args], [options]).
 function Job(input, arg1, arg2) {
+    var argOptions;
     this.privates = {};
 
     if (!input) {
@@ -75,18 +77,20 @@ function Job(input, arg1, arg2) {
 
     // Initialize with privates with arguments or defaults
     {
-        _.extend(this.privates, DEFAULTS, arg2);
+        argOptions = arg2;
 
         if (typeof arg1 === 'string') {
-            this.privates.program = PROGRAMS[arg1];
+            argOptions.program = PROGRAMS[arg1];
         } else {
-            _.extend(this.privates, arg1) 
+            argOptions = arg1; 
         }
+
+        this.privates = _.extend({}, DEFAULTS, argOptions);
 
         // Deep extension of privates with support of the defaults
         {
-            _.extend(this.privates.args, DEFAULTS.args, this.privates.args);
-            _.extend(this.privates.options, DEFAULTS.options, this.privates.options);
+            this.privates.args = _.extend({}, DEFAULTS.args, argOptions.args);
+            this.privates.options = _.extend({}, DEFAULTS.options, argOptions.options);
         }
 
         this.privates.input = input;
